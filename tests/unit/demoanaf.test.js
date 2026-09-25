@@ -98,10 +98,10 @@ describe('src/anaf.js', () => {
       expect(results[0]).toHaveProperty('statusLabel', 'Funcțiune');
     });
 
-    it('should throw on HTTP error', async () => {
+    it('should throw when both demoanaf.ro and cuifirma.ro search fail', async () => {
       mockFetch.mockResolvedValue(errorResponse(500));
 
-      await expect(anaf.searchCompany('EPAM')).rejects.toThrow('ANAF search error: 500');
+      await expect(anaf.searchCompany('EPAM')).rejects.toThrow('CUIFirma search error: 500');
     });
 
     it('should encode brand name in URL', async () => {
@@ -129,23 +129,31 @@ describe('src/anaf.js', () => {
       expect(data).toHaveProperty('registrationNumber');
     });
 
-    it('should retry on HTTP error then succeed', async () => {
+    it('should fall back to cuiscan.ro when demoanaf.ro fails', async () => {
+      const cuiscanRecord = {
+        cui: 33159615,
+        denumire: 'EPAM SYSTEMS INTERNATIONAL SRL',
+        adresa: 'IANCU DE HUNEDOARA, 48, Bucureşti Sectorul 1, Bucureşti',
+        codCaen: '6220',
+        activ: true
+      };
       mockFetch
-        .mockResolvedValueOnce(errorResponse(500))
-        .mockResolvedValueOnce(anafCompanyResponse(ANRAF_RECORD));
+        .mockResolvedValueOnce(errorResponse(402))
+        .mockResolvedValueOnce({ ok: true, json: async () => cuiscanRecord });
 
       const data = await anaf.getCompanyFromANAF('33159615');
 
       expect(data).toBeDefined();
       expect(data.cui).toBe(33159615);
+      expect(data.name).toBe('EPAM SYSTEMS INTERNATIONAL SRL');
       expect(mockFetch).toHaveBeenCalledTimes(2);
     });
 
-    it('should throw after exhausting retries', async () => {
-      mockFetch.mockResolvedValue(errorResponse(500));
+    it('should throw when both demoanaf.ro and cuiscan.ro fail', async () => {
+      mockFetch.mockResolvedValue(errorResponse(402));
 
       await expect(anaf.getCompanyFromANAF('33159615')).rejects.toThrow();
-      expect(mockFetch).toHaveBeenCalledTimes(3);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
     });
 
     it('should handle API-level error response', async () => {
