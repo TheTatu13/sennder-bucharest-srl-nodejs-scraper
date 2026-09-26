@@ -7,14 +7,14 @@
 | CIF | 45780151 |
 | Brand | sennder |
 | Status | activ |
-| Location | MUNICIPIUL BUCUREŞTI, SECTOR 6, BLD IULIU MANIU, NR.7, CLĂDIREA ONE COTROCENI PARK, ET.3 |
+| Location | MUNICIPIUL BUCUREŞTI, SECTOR 5, STR SERG. NUTU ION, NR.44, ET.5 |
 | Website | [https://www.sennder.com](https://www.sennder.com) |
 | Careers | [https://www.sennder.com/open-positions](https://www.sennder.com/open-positions) |
-| Last Scraped | 2026-09-25 |
+| Last Scraped | 2026-09-26 |
 
 ## Current Job Listings (2)
 
-_Generated: 2026-09-25T10:55:02.394Z_
+_Generated: 2026-09-26T10:34:42.757Z_
 
 ### Deputy GL Accounting Manager
 
