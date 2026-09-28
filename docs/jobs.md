@@ -10,11 +10,11 @@
 | Location | MUNICIPIUL BUCUREŞTI, SECTOR 5, STR SERG. NUTU ION, NR.44, ET.5 |
 | Website | [https://www.sennder.com](https://www.sennder.com) |
 | Careers | [https://www.sennder.com/open-positions](https://www.sennder.com/open-positions) |
-| Last Scraped | 2026-09-27 |
+| Last Scraped | 2026-09-28 |
 
 ## Current Job Listings (2)
 
-_Generated: 2026-09-27T11:07:17.795Z_
+_Generated: 2026-09-28T12:30:33.420Z_
 
 ### Deputy GL Accounting Manager
 
