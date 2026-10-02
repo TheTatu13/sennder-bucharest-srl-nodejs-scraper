@@ -28,33 +28,48 @@ function errorResponse(status) {
   };
 }
 
-const ANRAF_RECORD = {
-  cui: 33159615,
-  name: 'EPAM SYSTEMS INTERNATIONAL SRL',
+function cuiscanCompanyResponse(data) {
+  return {
+    ok: true,
+    json: async () => data
+  };
+}
+
+const LSEG_ANAF_RECORD = {
+  cui: 39176747,
+  name: 'LSEG BUSINESS SERVICES RM S.R.L.',
   address: 'IANCU DE HUNEDOARA, 48, Bucureşti Sectorul 1, Bucureşti',
   caenCode: '6220',
   inactive: false,
-  inactiveSince: '2018-12-27',
-  reactivatedSince: '2020-05-13',
   registrationNumber: 'J2014005735405',
   vatRegistered: true,
   onrcStatusLabel: 'Funcțiune',
   legalForm: 'SRL'
 };
 
+const CUISCAN_RECORD = {
+  cui: 39176747,
+  denumire: 'LSEG BUSINESS SERVICES RM S.R.L.',
+  adresa: 'IANCU DE HUNEDOARA, 48, Bucureşti Sectorul 1, Bucureşti',
+  codCaen: '6220',
+  activ: true,
+  nrRegCom: 'J2014005735405',
+  platitorTVA: true,
+  stareInregistrare: 'INREGISTRAT din data 14.05.2014',
+  adresaSediu: { strada: 'Bld. Iancu de Hunedoara', numar: '48', localitate: 'Sector 1 Mun. Bucureşti', judet: 'MUNICIPIUL BUCUREŞTI', codPostal: '11745' }
+};
+
 const CACHED_DATA = {
-  cui: 33159615,
-  name: 'EPAM SYSTEMS INTERNATIONAL SRL',
+  cui: 39176747,
+  name: 'LSEG BUSINESS SERVICES RM S.R.L.',
   address: 'MUNICIPIUL BUCUREŞTI, SECTOR 1, BLD IANCU DE HUNEDOARA, NR.48, ET.9',
   registrationNumber: 'J2014005735405',
   caenCode: '6220',
   inactive: false,
-  onrcStatusLabel: 'Funcțiune',
-  administrators: [{ name: 'JASON PETERSON', role: 'administrator' }],
-  authorizedCaenCodes: ['6210', '6220', '6290', '7020', '8559']
+  onrcStatusLabel: 'Funcțiune'
 };
 
-describe('src/anaf.js', () => {
+describe('scraper/anaf.js', () => {
   let anaf;
 
   beforeAll(async () => {
@@ -68,10 +83,10 @@ describe('src/anaf.js', () => {
   describe('searchCompany', () => {
     it('should return array of companies for valid brand', async () => {
       mockFetch.mockResolvedValue(anafSearchResponse([
-        { cui: 33159615, name: 'EPAM SYSTEMS INTERNATIONAL SRL', statusLabel: 'Funcțiune' }
+        { cui: 39176747, name: 'LSEG BUSINESS SERVICES RM S.R.L.', statusLabel: 'Funcțiune' }
       ]));
 
-      const results = await anaf.searchCompany('EPAM');
+      const results = await anaf.searchCompany('LSEG');
 
       expect(Array.isArray(results)).toBe(true);
       expect(results.length).toBeGreaterThan(0);
@@ -90,18 +105,24 @@ describe('src/anaf.js', () => {
 
     it('should include statusLabel in results', async () => {
       mockFetch.mockResolvedValue(anafSearchResponse([
-        { cui: 33159615, name: 'EPAM SYSTEMS INTERNATIONAL SRL', statusLabel: 'Funcțiune' }
+        { cui: 39176747, name: 'LSEG BUSINESS SERVICES RM S.R.L.', statusLabel: 'Funcțiune' }
       ]));
 
-      const results = await anaf.searchCompany('EPAM');
+      const results = await anaf.searchCompany('LSEG');
 
       expect(results[0]).toHaveProperty('statusLabel', 'Funcțiune');
     });
 
-    it('should throw when both demoanaf.ro and cuifirma.ro search fail', async () => {
-      mockFetch.mockResolvedValue(errorResponse(500));
+    it('should fallback to CUIFirma when ANAF search fails', async () => {
+      mockFetch
+        .mockResolvedValueOnce(errorResponse(500))
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ results: [{ cui: 39176747, name: 'LSEG BUSINESS SERVICES RM S.R.L.', is_active: true }] }) });
 
-      await expect(anaf.searchCompany('EPAM')).rejects.toThrow('CUIFirma search error: 500');
+      const results = await anaf.searchCompany('LSEG');
+
+      expect(Array.isArray(results)).toBe(true);
+      expect(results.length).toBeGreaterThan(0);
+      expect(results[0].cui).toBe('39176747');
     });
 
     it('should encode brand name in URL', async () => {
@@ -111,56 +132,91 @@ describe('src/anaf.js', () => {
         return Promise.resolve(anafSearchResponse([]));
       });
 
-      await anaf.searchCompany('EPAM SRL');
-      expect(capturedUrl).toContain(encodeURIComponent('EPAM SRL'));
+      await anaf.searchCompany('LSEG SRL');
+      expect(capturedUrl).toContain(encodeURIComponent('LSEG SRL'));
     });
   });
 
   describe('getCompanyFromANAF', () => {
     it('should return company data for valid CIF', async () => {
-      mockFetch.mockResolvedValue(anafCompanyResponse(ANRAF_RECORD));
+      mockFetch.mockResolvedValue(anafCompanyResponse(LSEG_ANAF_RECORD));
 
-      const data = await anaf.getCompanyFromANAF('33159615');
+      const data = await anaf.getCompanyFromANAF('39176747');
 
       expect(data).toBeDefined();
-      expect(data.cui).toBe(33159615);
-      expect(data.name).toBe('EPAM SYSTEMS INTERNATIONAL SRL');
+      expect(data.cui).toBe(39176747);
+      expect(data.name).toBe('LSEG BUSINESS SERVICES RM S.R.L.');
       expect(data).toHaveProperty('address');
       expect(data).toHaveProperty('registrationNumber');
     });
 
-    it('should fall back to cuiscan.ro when demoanaf.ro fails', async () => {
-      const cuiscanRecord = {
-        cui: 33159615,
-        denumire: 'EPAM SYSTEMS INTERNATIONAL SRL',
-        adresa: 'IANCU DE HUNEDOARA, 48, Bucureşti Sectorul 1, Bucureşti',
-        codCaen: '6220',
-        activ: true
-      };
+    it('should fallback to CUIScan when ANAF fails', async () => {
       mockFetch
-        .mockResolvedValueOnce(errorResponse(402))
-        .mockResolvedValueOnce({ ok: true, json: async () => cuiscanRecord });
+        .mockResolvedValueOnce(errorResponse(500))
+        .mockResolvedValueOnce(cuiscanCompanyResponse(CUISCAN_RECORD));
 
-      const data = await anaf.getCompanyFromANAF('33159615');
+      const data = await anaf.getCompanyFromANAF('39176747');
 
       expect(data).toBeDefined();
-      expect(data.cui).toBe(33159615);
-      expect(data.name).toBe('EPAM SYSTEMS INTERNATIONAL SRL');
+      expect(data.cui).toBe(39176747);
+      expect(data.name).toBe('LSEG BUSINESS SERVICES RM S.R.L.');
       expect(mockFetch).toHaveBeenCalledTimes(2);
     });
 
-    it('should throw when both demoanaf.ro and cuiscan.ro fail', async () => {
-      mockFetch.mockResolvedValue(errorResponse(402));
+    it('should retry CUIScan when it answers HTML instead of JSON', async () => {
+      mockFetch
+        .mockResolvedValueOnce(errorResponse(500))
+        .mockResolvedValueOnce({ ok: true, json: async () => { throw new SyntaxError('Unexpected token <'); } })
+        .mockResolvedValueOnce(cuiscanCompanyResponse(CUISCAN_RECORD));
 
-      await expect(anaf.getCompanyFromANAF('33159615')).rejects.toThrow();
-      expect(mockFetch).toHaveBeenCalledTimes(2);
+      const data = await anaf.getCompanyFromANAF('39176747');
+
+      expect(data.name).toBe('LSEG BUSINESS SERVICES RM S.R.L.');
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+    });
+
+    it('should give up with a clear error when CUIScan keeps answering HTML', async () => {
+      mockFetch
+        .mockResolvedValueOnce(errorResponse(500))
+        .mockResolvedValue({ ok: true, json: async () => { throw new SyntaxError('Unexpected token <'); } });
+
+      await expect(anaf.getCompanyFromANAF('39176747')).rejects.toThrow(/non-JSON/);
+      expect(mockFetch).toHaveBeenCalledTimes(5);
+    });
+
+    it('should fall back to the official ANAF API when CUIScan is unusable', async () => {
+      mockFetch
+        .mockResolvedValueOnce(errorResponse(500))
+        .mockResolvedValueOnce(errorResponse(503))
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ found: [{
+          date_generale: { cui: 21913994, denumire: 'GAMINVEST SRL', adresa: 'ORADEA', cod_CAEN: '6831' },
+          inregistrare_scop_Tva: { scpTVA: true },
+          stare_inactiv: { statusInactivi: false }
+        }] }) });
+
+      const data = await anaf.getCompanyFromANAF('21913994');
+
+      expect(data.name).toBe('GAMINVEST SRL');
+      expect(data.vatRegistered).toBe(true);
+      expect(data.inactive).toBe(false);
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+      expect(mockFetch.mock.calls[2][0]).toContain('webservicesp.anaf.ro');
+    });
+
+    it('should throw when both ANAF and CUIScan fail', async () => {
+      mockFetch.mockResolvedValue(errorResponse(500));
+
+      await expect(anaf.getCompanyFromANAF('39176747')).rejects.toThrow();
+      expect(mockFetch).toHaveBeenCalledTimes(3);
     });
 
     it('should handle API-level error response', async () => {
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: async () => ({ success: false, error: { message: 'Company not found' } })
-      });
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ success: false, error: { message: 'Company not found' } })
+        })
+        .mockResolvedValueOnce(errorResponse(500));
 
       await expect(anaf.getCompanyFromANAF('00000000')).rejects.toThrow();
     });
@@ -168,24 +224,24 @@ describe('src/anaf.js', () => {
     it('should return null when data is null', async () => {
       mockFetch.mockResolvedValue(anafCompanyResponse(null));
 
-      const data = await anaf.getCompanyFromANAF('33159615');
+      const data = await anaf.getCompanyFromANAF('39176747');
       expect(data).toBeNull();
     });
   });
 
   describe('getCompanyFromANAFWithFallback', () => {
     it('should return fresh data when API works', async () => {
-      mockFetch.mockResolvedValue(anafCompanyResponse(ANRAF_RECORD));
+      mockFetch.mockResolvedValue(anafCompanyResponse(LSEG_ANAF_RECORD));
 
-      const data = await anaf.getCompanyFromANAFWithFallback('33159615');
+      const data = await anaf.getCompanyFromANAFWithFallback('39176747');
 
-      expect(data.name).toBe('EPAM SYSTEMS INTERNATIONAL SRL');
+      expect(data.name).toBe('LSEG BUSINESS SERVICES RM S.R.L.');
     });
 
     it('should use cached data when API fails', async () => {
       mockFetch.mockResolvedValue(errorResponse(500));
 
-      const data = await anaf.getCompanyFromANAFWithFallback('33159615', CACHED_DATA);
+      const data = await anaf.getCompanyFromANAFWithFallback('39176747', CACHED_DATA);
 
       expect(data).toEqual(CACHED_DATA);
     });
@@ -193,7 +249,7 @@ describe('src/anaf.js', () => {
     it('should throw when API fails and no cache available', async () => {
       mockFetch.mockResolvedValue(errorResponse(500));
 
-      await expect(anaf.getCompanyFromANAFWithFallback('33159615')).rejects.toThrow();
+      await expect(anaf.getCompanyFromANAFWithFallback('39176747')).rejects.toThrow();
     });
   });
 });
