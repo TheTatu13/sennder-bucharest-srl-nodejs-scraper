@@ -10,19 +10,11 @@
 | Location | MUNICIPIUL BUCUREŞTI, SECTOR 5, STR SERG. NUTU ION, NR.44, ET.5 |
 | Website | [https://www.sennder.com](https://www.sennder.com) |
 | Careers | [https://www.sennder.com/open-positions](https://www.sennder.com/open-positions) |
-| Last Scraped | 2026-10-01 |
+| Last Scraped | 2026-10-02 |
 
-## Current Job Listings (2)
+## Current Job Listings (1)
 
-_Generated: 2026-10-01T12:09:34.611Z_
-
-### Deputy GL Accounting Manager
-
-- **URL:** [https://jobs.gem.com/senndertechnologies-gmbh/am9icG9zdDp61Z5HPJHsf1jhaNVbXfWW](https://jobs.gem.com/senndertechnologies-gmbh/am9icG9zdDp61Z5HPJHsf1jhaNVbXfWW)
-- **Work Mode:** on-site
-- **Location:** Bucharest
-- **Tags:** finance 
-- **Status:** scraped
+_Generated: 2026-10-02T11:39:33.811Z_
 
 ### Senior GL Accountant 
 
