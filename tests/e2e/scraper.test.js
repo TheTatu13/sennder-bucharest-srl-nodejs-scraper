@@ -8,7 +8,8 @@ import companyConfig from '../../config/company.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(__dirname, '../../.env.local') });
 
-const HAS_SOLR = !!process.env.SOLR_AUTH;
+// Live API tests hit api.peviitor.ro (no credential needed) -- opt in explicitly.
+const HAS_SOLR = !!process.env.RUN_LIVE_API_TESTS;
 const CIF = companyConfig.cif;
 const BRAND = companyConfig.brand;
 const LEGAL_NAME = companyConfig.legalName;
@@ -18,14 +19,8 @@ function itIfSolr(name, fn, timeout) {
   if (HAS_SOLR) {
     return it(name, fn, timeout);
   }
-  return it.skip(`${name} (skipped: SOLR_AUTH not set)`, fn, timeout);
+  return it.skip(`${name} (skipped: set RUN_LIVE_API_TESTS=1 to run)`, fn, timeout);
 }
-
-beforeAll(() => {
-  if (HAS_SOLR) {
-    process.env.SOLR_AUTH = process.env.SOLR_AUTH;
-  }
-});
 
 describe('E2E: Full Scraping Pipeline', () => {
 
@@ -231,10 +226,9 @@ describe('E2E: Full Scraping Pipeline', () => {
     }, 15000);
 
     itIfSolr('should have company core entry with required fields', async () => {
-      const result = await solr.queryCompanySOLR(`id:${CIF}`);
+      const company = await solr.getCompanyByCif(CIF);
 
-      expect(result.numFound).toBe(1);
-      const company = result.docs[0];
+      expect(company).not.toBeNull();
       expect(company.company).toBe(LEGAL_NAME);
       expect(company.status).toBe('activ');
     }, 15000);
